@@ -1,28 +1,163 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مدير المهام</title></head>
-<body>
-<h2>مدير المهام</h2>
-<select id="type"><option value="daily">يومية</option><option value="weekly">أسبوعية</option><option value="monthly">شهرية</option><option value="yearly">سنوية</option></select>
-<input id="taskInput" placeholder="المهمة">
-<input id="repeatCount" type="number" min="1" value="1" placeholder="التكرارات">
-<button onclick="addTask()">إضافة</button>
-<div id="daily"></div><div id="weekly"></div><div id="monthly"></div><div id="yearly"></div>
+
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدير المهام الاحترافي</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen p-4">
+
+<div class="max-w-5xl mx-auto">
+
+<!-- العنوان -->
+
+<div class="text-center mb-8">
+<h1 class="text-4xl font-bold text-gray-800">📋 مدير المهام</h1>
+<p class="text-gray-600 mt-2">نظّم يومك وأسبوعك وشهرك بسهولة</p>
+</div>
+
+<!-- إضافة مهمة -->
+
+<div class="bg-white rounded-2xl shadow-lg p-5 mb-6">
+<div class="flex flex-col md:flex-row gap-3">
+
+<select id="type" class="p-3 rounded-xl border w-full md:w-1/4">
+<option value="daily">📅 يومية</option>
+<option value="weekly">📆 أسبوعية</option>
+<option value="monthly">🗓️ شهرية</option>
+<option value="yearly">📌 سنوية</option>
+</select>
+
+<input id="taskInput" placeholder="اكتب المهمة..." 
+class="p-3 rounded-xl border w-full flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
+
+<input id="repeatCount" type="number" min="1" value="1" class="p-3 rounded-xl border w-24" placeholder="التكرارات">
+
+<button onclick="addTask()" 
+class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl">
+➕ إضافة </button>
+
+</div>
+</div>
+
+<!-- الأقسام -->
+
+<div class="grid md:grid-cols-2 gap-5">
+
+<div class="bg-white rounded-2xl shadow p-4">
+<h2 class="font-bold text-lg mb-3">📅 اليومية</h2>
+<div id="daily"></div>
+</div>
+
+<div class="bg-white rounded-2xl shadow p-4">
+<h2 class="font-bold text-lg mb-3">📆 الأسبوعية</h2>
+<div id="weekly"></div>
+</div>
+
+<div class="bg-white rounded-2xl shadow p-4">
+<h2 class="font-bold text-lg mb-3">🗓️ الشهرية</h2>
+<div id="monthly"></div>
+</div>
+
+<div class="bg-white rounded-2xl shadow p-4">
+<h2 class="font-bold text-lg mb-3">📌 السنوية</h2>
+<div id="yearly"></div>
+</div>
+
+</div>
+
+</div>
+
 <script>
-let tasks=JSON.parse(localStorage.getItem("tasks")||"[]");
-function save(){localStorage.setItem("tasks",JSON.stringify(tasks))}
-function addTask(){
-let text=taskInput.value.trim(); if(!text)return;
-let type=document.getElementById("type").value;
-let r=parseInt(repeatCount.value)||1;
-tasks.push({text,type,date:new Date().toISOString(),checks:Array(r).fill(false)});
-taskInput.value="";repeatCount.value=1;save();render();}
-function shouldShow(t){return true;}
-function toggleCheck(i,j){tasks[i].checks[j]=!tasks[i].checks[j];save();}
-function removeTask(i){tasks.splice(i,1);save();render();}
-function createTaskElement(t,i){
-return `<div><b>${t.text}</b><div>${t.checks.map((c,j)=>`<label><input type="checkbox" ${c?"checked":""} onchange="toggleCheck(${i},${j})"></label>`).join("")}</div><button onclick="removeTask(${i})">حذف</button></div><hr>`;
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+function save() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
 }
-function render(){["daily","weekly","monthly","yearly"].forEach(k=>document.getElementById(k).innerHTML="");
-tasks.forEach((t,i)=>document.getElementById(t.type).innerHTML+=createTaskElement(t,i));}
+
+function addTask() {
+  let text = document.getElementById("taskInput").value.trim();
+  let type = document.getElementById("type").value;
+
+  if (!text) return;
+
+  tasks.push({
+    text,
+    type,
+    date: new Date().toISOString(),
+    repeatCount: parseInt(document.getElementById("repeatCount").value)||1,
+    checks: Array(parseInt(document.getElementById("repeatCount").value)||1).fill(false)
+  });
+
+  document.getElementById("taskInput").value="";document.getElementById("repeatCount").value=1;
+  save();
+  render();
+}
+
+function shouldShow(task) {
+  let now = new Date();
+  let created = new Date(task.date);
+
+  if (task.type === "daily") return true;
+
+  if (task.type === "weekly") {
+    return now.getDay() === created.getDay();
+  }
+
+  if (task.type === "monthly") {
+    return now.getDate() === created.getDate();
+  }
+
+  if (task.type === "yearly") {
+    return now.getDate() === created.getDate() &&
+           now.getMonth() === created.getMonth();
+  }
+
+  return false;
+}
+
+function toggleCheck(index,c){tasks[index].checks[c]=!tasks[index].checks[c];save();render();}
+
+function createTaskElement(task, index) {
+  return `
+  <div class="flex justify-between items-center bg-gray-100 p-3 rounded-xl mb-2">
+    <div class="flex items-center gap-2">
+      ${task.checks.map((v,c)=>`<input type="checkbox" ${v?"checked":""} onclick="toggleCheck(${index},${c})">`).join("")}<span>${task.text}
+      </span>
+    </div>
+    <button onclick="removeTask(${index})" class="text-red-500 hover:text-red-700">❌</button>
+  </div>`;
+}
+
+function render() {
+  let sections = {
+    daily: document.getElementById("daily"),
+    weekly: document.getElementById("weekly"),
+    monthly: document.getElementById("monthly"),
+    yearly: document.getElementById("yearly"),
+  };
+
+  for (let key in sections) sections[key].innerHTML = "";
+
+  tasks.forEach((task, i) => {
+    if (!shouldShow(task)) return;
+
+    sections[task.type].innerHTML += createTaskElement(task, i);
+  });
+}
+
+function removeTask(index) {
+  tasks.splice(index, 1);
+  save();
+  render();
+}
+
 render();
-</script></body></html>
+</script>
+
+</body>
+</html>
